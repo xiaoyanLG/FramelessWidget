@@ -141,9 +141,14 @@ bool FramelessWidget::event(QEvent *event)
 {
 #if defined(Q_OS_WIN)
     if (event->type() == QEvent::WindowStateChange) {
-        d->maxButton->update();
-        update();
-    } else if (event->type() == QEvent::Resize) {
+        if (this->isMaximized() && d->compositionEnabled()) {
+            auto margin = 8 / this->devicePixelRatioF();
+            d->layout->setContentsMargins(QMargins(margin, margin, margin, margin));
+            d->layout->update();
+        } else {
+            d->layout->setContentsMargins(QMargins(0, 0, 0, 0));
+            d->layout->update();
+        }
         update();
     }
 #endif
@@ -209,6 +214,7 @@ bool FramelessWidget::eventFilter(QObject *watched, QEvent *event)
         painter.setBrush(d->titleBarColor);
         painter.drawRect(d->titleBar->rect());
     }
+
     return QWidget::eventFilter(watched, event);
 }
 
@@ -428,11 +434,8 @@ bool FramelessWidget::nativeEvent(const QByteArray &eventType, void *message, lo
             info->ptMaxPosition.x = 0;
             info->ptMaxPosition.y = 0;
 
-            info->ptMaxSize.x = GetSystemMetrics(SM_CXFULLSCREEN) + GetSystemMetrics(SM_CXDLGFRAME)
-             + GetSystemMetrics(SM_CXBORDER)+ GetSystemMetrics(SM_CYBORDER);
-
-            info-> ptMaxSize.y = GetSystemMetrics(SM_CYFULLSCREEN) + GetSystemMetrics(SM_CYCAPTION)
-             + GetSystemMetrics(SM_CYDLGFRAME) + GetSystemMetrics(SM_CYBORDER);
+            info->ptMaxSize.x = GetSystemMetrics(SM_CXFULLSCREEN) + GetSystemMetrics(SM_CXDLGFRAME);
+            info-> ptMaxSize.y = GetSystemMetrics(SM_CYFULLSCREEN) + GetSystemMetrics(SM_CYCAPTION);
         }
         return true;
     }
